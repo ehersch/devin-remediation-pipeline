@@ -222,3 +222,10 @@ CI-retry → escalate flow against in-memory GitHub and Devin doubles, and asser
 the properties that cost money when they break: filing is idempotent, a live
 session is never duplicated, the CI retry budget is enforced, and the ledger
 survives a process restart.
+
+## Architecture
+
+![architecture](docs/architecture.png)
+
+Regenerate with `pip install graphviz && python docs/architecture.py` (needs the
+`graphviz` system package for `dot`).
