@@ -121,6 +121,9 @@ GitHub or the Devin API.
 
 ## Running it
 
+A guided, step-by-step walkthrough (what to run, what to look at, and why each
+step exists) is in [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md).
+
 ```bash
 pip install -r devin_pipeline/requirements.txt
 
