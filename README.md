@@ -18,9 +18,14 @@
 -->
 # Devin remediation pipeline
 
-An event-driven control plane that finds machine-verifiable defects in this
+An event-driven control plane that finds machine-verifiable defects in a target
 repository, files them as issues, and remediates them with Devin sessions
 created through the [Devin API](https://docs.devin.ai/api-reference/overview).
+
+It runs against [Apache Superset](https://github.com/apache/superset). The live
+results are in the fork it operates on, <https://github.com/ehersch/superset>:
+the [issues it filed](https://github.com/ehersch/superset/issues) and the
+[pull requests Devin opened against them](https://github.com/ehersch/superset/pulls).
 
 ```
  detectors ──▶ issues (evidence block) ──▶ label `devin-fix` ──▶ Devin session
@@ -52,6 +57,18 @@ spend incident and gives a human a natural place to intervene.
 **Budgets are configuration, not comments.** Sessions carry `max_acu_limit`,
 dispatch is capped per run, and CI feedback is capped per PR. When a budget is
 exhausted the pipeline escalates (`needs-human`) instead of retrying.
+
+## Installing it into a repository
+
+The three workflows in `.github/workflows/` are the event surface; copy them
+into the repository the pipeline should operate on, add a `DEVIN_API_KEY`
+Actions secret, and vendor this package (or `pip install` it) so
+`python -m devin_pipeline.pipeline.cli` resolves. Everything else — the ledger
+branch, the labels, the dashboard branch — is created on first run.
+
+The detectors read a checkout of the target repository (`REPO_PATH`), so the
+workflows check that repository out and point the CLI at it; nothing about the
+control plane is Superset-specific except the detector set.
 
 ## Detectors
 
@@ -137,7 +154,7 @@ The image carries Python and the Node toolchain the `npm_audit` detector shells
 out to, so a run needs nothing installed on the host:
 
 ```bash
-docker build -f devin_pipeline/Dockerfile -t devin-pipeline .
+docker build -t devin-pipeline .
 
 # Rehearse the detectors against a checkout mounted read-only
 docker run --rm -v "$PWD:/repo:ro" devin-pipeline --dry-run detect
@@ -196,6 +213,8 @@ by Actions.
 
 ```bash
 pytest devin_pipeline/tests -q
+ruff check devin_pipeline
+mypy devin_pipeline --ignore-missing-imports
 ```
 
 The orchestrator tests run the full detect → file → dispatch → monitor →

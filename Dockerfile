@@ -17,7 +17,7 @@
 #
 # The control plane, runnable anywhere the Actions workflows are not:
 #
-#   docker build -f devin_pipeline/Dockerfile -t devin-pipeline .
+#   docker build -t devin-pipeline .
 #   docker run --rm devin-pipeline --dry-run detect
 #   docker run --rm -e GITHUB_TOKEN -e DEVIN_API_KEY \
 #     -v "$PWD/.devin-pipeline:/state" -e PIPELINE_STATE=/state/state.json \
