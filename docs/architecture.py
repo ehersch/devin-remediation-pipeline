@@ -26,15 +26,26 @@ from pathlib import Path
 
 from graphviz import Digraph
 
-INK = "#1f2933"
-MUTED = "#6b7785"
+INK = "#111827"
+MUTED = "#7b8794"
+LINE = "#9aa5b1"
 EVENT = "#fde68a"
 PLANE = "#bfdbfe"
-DEVIN = "#c7d2fe"
-OUTPUT = "#bbf7d0"
-GATE = "#fecaca"
+DEVIN = "#c7b2fd"
+OUTPUT = "#a7f3d0"
+STORE = "#e5e7eb"
 
 OUT = Path(__file__).resolve().parent / "architecture"
+
+
+def label(title: str, subtitle: str = "") -> str:
+    """A bold title with an optional muted second line."""
+    if not subtitle:
+        return f"<<b>{title}</b>>"
+    return (
+        f'<<b>{title}</b><br/><font point-size="10" color="{MUTED}">'
+        f"{subtitle}</font>>"
+    )
 
 
 def build() -> Digraph:
@@ -42,152 +53,102 @@ def build() -> Digraph:
     g.attr(
         rankdir="LR",
         splines="spline",
-        newrank="true",
-        nodesep="0.45",
-        ranksep="1.0",
+        nodesep="0.5",
+        ranksep="1.4",
         bgcolor="white",
         fontname="Helvetica",
-        labelloc="t",
-        label=(
-            "Devin remediation pipeline — event-driven control plane "
-            "over the Devin API"
-        ),
-        fontsize="20",
-        fontcolor=INK,
+        margin="0.2",
     )
     g.attr(
         "node",
         shape="box",
         style="filled,rounded",
         fontname="Helvetica",
-        fontsize="12",
-        color="#00000000",
+        fontsize="13",
+        penwidth="0",
         fontcolor=INK,
-        margin="0.18,0.12",
+        height="0.7",
+        margin="0.24,0.16",
     )
-    g.attr("edge", fontname="Helvetica", fontsize="10", color=MUTED, fontcolor=MUTED)
+    g.attr(
+        "edge",
+        fontname="Helvetica",
+        fontsize="10",
+        color=LINE,
+        fontcolor=MUTED,
+        arrowsize="0.7",
+        penwidth="1.1",
+    )
 
-    with g.subgraph(name="cluster_events") as c:
-        c.attr(
-            label="Events (GitHub Actions)",
-            style="rounded",
-            color="#d8dee6",
-            fontname="Helvetica",
-            fontsize="13",
-            fontcolor=MUTED,
-        )
-        c.node("schedule", "nightly schedule\nscan", fillcolor=EVENT)
-        c.node("labeled", "issues.labeled\n`devin-fix`", fillcolor=EVENT)
-        c.node("poll", "every 15 min\npoll", fillcolor=EVENT)
-        c.node("checks", "check_suite\nfailure", fillcolor=EVENT)
-        c.attr(rank="same")
+    def cluster(name: str, title: str, nodes: list[tuple[str, str, str, str]]) -> None:
+        with g.subgraph(name=f"cluster_{name}") as c:
+            c.attr(
+                label=f"  {title}  ",
+                labeljust="l",
+                style="rounded",
+                color="#dfe3e8",
+                fontname="Helvetica",
+                fontsize="11",
+                fontcolor=MUTED,
+                margin="16",
+            )
+            for key, title_, subtitle, fill in nodes:
+                shape = "cylinder" if key == "ledger" else "box"
+                c.node(key, label(title_, subtitle), fillcolor=fill, shape=shape)
+            c.attr(rank="same")
 
-    with g.subgraph(name="cluster_plane") as c:
-        c.attr(
-            label="Control plane  (Docker image / python -m devin_pipeline.pipeline.cli)",
-            style="rounded",
-            color="#d8dee6",
-            fontname="Helvetica",
-            fontsize="13",
-            fontcolor=MUTED,
-        )
-        c.node(
-            "detect",
-            "detectors\nnpm audit · OSV · i18n placeholders\nengine specs · upstream mirror",
-            fillcolor=PLANE,
-        )
-        c.node(
-            "file",
-            "issue filer\nembeds evidence block:\nfingerprint · repro · acceptance",
-            fillcolor=PLANE,
-        )
-        c.node(
-            "gate",
-            "approval gate\nlabel present?  ACU + dispatch budget?",
-            fillcolor=GATE,
-        )
-        c.node("dispatch", "dispatcher\nprompt from the evidence block", fillcolor=PLANE)
-        c.node(
-            "monitor",
-            "monitor\nsettles on structured output",
-            fillcolor=PLANE,
-        )
-        c.node(
-            "feedback",
-            "CI feedback\nfailing checks → owning session",
-            fillcolor=PLANE,
-        )
-        c.node(
-            "ledger",
-            "ledger (JSON on a branch)\nissue → attempts → session id,\noutcome, PR, timings",
-            shape="cylinder",
-            fillcolor="#e5e7eb",
-        )
-        c.attr(rank="same")
-
-    g.node(
+    cluster(
+        "events",
+        "EVENTS · GitHub Actions",
+        [
+            ("scan", "nightly schedule", "", EVENT),
+            ("labeled", "issue labeled devin-fix", "", EVENT),
+            ("poll", "poll every 15 min", "", EVENT),
+            ("ci", "PR checks failed", "", EVENT),
+        ],
+    )
+    cluster(
+        "plane",
+        "CONTROL PLANE · one Docker image",
+        [
+            ("detect", "Detect &amp; file", "evidence: repro + acceptance", PLANE),
+            ("dispatch", "Dispatch", "approval gate, ACU budget", PLANE),
+            ("monitor", "Monitor", "settle on structured outcome", PLANE),
+            ("feedback", "Feed back", "failing checks → same session", PLANE),
+            ("ledger", "Ledger", "issue → session → outcome", STORE),
+        ],
+    )
+    cluster(
         "devin",
-        "Devin API\nPOST /v1/sessions\nGET  /v1/session/{id}\nPOST /v1/session/{id}/message",
-        fillcolor=DEVIN,
+        "DEVIN",
+        [("session", "Devin session", "reproduce → fix → verify", DEVIN)],
     )
-    g.node(
-        "session",
-        "Devin session\nreproduce → fix →\nrun acceptance criteria →\nreport structured outcome",
-        fillcolor=DEVIN,
+    cluster(
+        "out",
+        "OBSERVABLE OUTPUT",
+        [
+            ("issues", "Issues", "session links, status labels", OUTPUT),
+            ("prs", "Pull requests", "fix + the test that proves it", OUTPUT),
+            ("dash", "Dashboard", "resolution rate, throughput", OUTPUT),
+        ],
     )
 
-    with g.subgraph(name="cluster_out") as c:
-        c.attr(
-            label="Observable output",
-            style="rounded",
-            color="#d8dee6",
-            fontname="Helvetica",
-            fontsize="13",
-            fontcolor=MUTED,
-        )
-        c.node("issues", "issues in the fork\n+ session-url comments", fillcolor=OUTPUT)
-        c.node("prs", "pull requests\n(fix + the test that proves it)", fillcolor=OUTPUT)
-        c.node(
-            "labels",
-            "labels\ndevin-working / devin-fixed / needs-human",
-            fillcolor=OUTPUT,
-        )
-        c.node(
-            "dash",
-            "dashboard + metrics\nresolution rate · time to settle ·\nthroughput · escalations",
-            fillcolor=OUTPUT,
-        )
-        c.attr(rank="same")
-
-    g.edge("schedule", "detect")
-    g.edge("labeled", "gate", label="human approval")
+    g.edge("scan", "detect")
+    g.edge("labeled", "dispatch")
     g.edge("poll", "monitor")
-    g.edge("checks", "feedback", label="failed PR checks")
+    g.edge("ci", "feedback")
 
-    g.edge("detect", "file", label="findings", constraint="false")
-    g.edge("gate", "dispatch", label="pass", constraint="false")
-
-    g.edge("dispatch", "devin", label="create session")
-    g.edge("monitor", "devin", label="read status +\nstructured output")
-    g.edge("feedback", "devin", label="message the\nsame session")
-    g.edge("devin", "session")
-
-    g.edge("dispatch", "ledger", label="session id", style="dotted", constraint="false")
-    g.edge("monitor", "ledger", style="dotted", constraint="false")
-    g.edge(
-        "ledger",
-        "feedback",
-        label="PR → owning session",
-        style="dotted",
-        constraint="false",
-    )
-
-    g.edge("file", "issues", label="files")
-    g.edge("monitor", "issues", label="comments outcome")
-    g.edge("monitor", "labels", label="settles")
-    g.edge("gate", "labels", label="blocked → needs-human", style="dashed")
+    g.edge("detect", "issues", label="files")
+    g.edge("dispatch", "session", label="create session")
+    g.edge("monitor", "session", label="read outcome", style="dashed")
+    g.edge("feedback", "session", label="message")
     g.edge("session", "prs", label="opens")
+    g.edge("monitor", "issues", label="comment + label")
     g.edge("ledger", "dash", label="rendered from")
+
+    g.edge("dispatch", "ledger", style="dotted", constraint="false")
+    g.edge("monitor", "ledger", style="dotted", constraint="false")
+    g.edge("ledger", "feedback", style="dotted", constraint="false")
     return g
 
 
