@@ -130,6 +130,7 @@ pip install -r devin_pipeline/requirements.txt
 # See what the detectors find, touching nothing
 python -m devin_pipeline.pipeline.cli --dry-run detect
 python -m devin_pipeline.pipeline.cli --dry-run detect --only npm_audit --json
+# …or as a page: --html findings.html, or --serve to read it at localhost:8000
 
 # File issues, dispatch, monitor, report (needs GITHUB_TOKEN + DEVIN_API_KEY)
 python -m devin_pipeline.pipeline.cli file

@@ -57,6 +57,18 @@ bar the session has to clear before it is allowed to report `fixed`.
 The five detectors are `npm_audit`, `osv_python`, `i18n_placeholders`,
 `engine_spec_metadata` and `upstream_mirror`.
 
+If you would rather read this than scroll a terminal, the same run renders as a
+page — severity counts up top, one row per finding, with the evidence,
+reproduction and acceptance criteria folded away under each:
+
+```bash
+docker run --rm -p 8000:8000 -v "$PWD/../superset:/repo:ro" \
+  devin-pipeline --dry-run detect --serve      # then open http://localhost:8000
+```
+
+`--html findings.html` writes the same page to a file instead of serving it, and
+`dashboard --serve` does the same for the status dashboard.
+
 ## 2. Read a filed issue
 
 <https://github.com/ehersch/superset/issues/8> — scroll to the bottom and view
