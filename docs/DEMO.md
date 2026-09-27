@@ -17,6 +17,7 @@ pull requests, and a dashboard that answers "is this working?" in one glance.
 |---|---|
 | Solution repo (Docker + CLI + workflows) | https://github.com/ehersch/devin-remediation-pipeline |
 | Superset fork with the issues | https://github.com/ehersch/superset/issues |
+| Pinned "how to read this fork" issue | https://github.com/ehersch/superset/issues/34 |
 | Remediation PRs Devin opened | https://github.com/ehersch/superset/pulls |
 | Dashboard | `gh-pages` branch of the fork (`index.html`) |
 | Architecture diagram | [`architecture.png`](architecture.png) |
@@ -77,10 +78,23 @@ in flight / fixed with a PR / escalated / autonomous resolution rate / median
 time to settle / CI retries, a throughput chart, and per issue the session, the
 PR, and the verification transcript it ran.
 
-Land on the two escalated rows — https://github.com/ehersch/superset/issues/13
+Land on the escalated rows — https://github.com/ehersch/superset/issues/13
 (could not reproduce) and https://github.com/ehersch/superset/issues/12
 (paramiko: the only unaffected release removes an API `sshtunnel` depends on).
-*"The success rate isn't self-graded: those are the two it refused to fake."*
+*"The success rate isn't self-graded: those are the ones it refused to fake."*
+
+**6. Optional, and the best 30 seconds if you have them — answering an
+escalation.** Issue #12 came back with a question rather than a diff: every
+paramiko `<= 4.0.0` is affected, and 5.0.0 removes `DSSKey`, which
+`sshtunnel` calls unconditionally. Shim it, replace sshtunnel, or accept the
+risk? I answered *shim it* in the session — not by re-running anything, just by
+replying to the agent that already had the context — and it came back with
+https://github.com/ehersch/superset/pull/33: the shim, the upgrade, tests on
+both paramiko 3.x and 5.x, and the `UPDATING.md` note for the dropped DSA
+support. The next poll clears `needs-human` and moves the row to fixed.
+
+*"That is the shape of the whole thing: escalation is a question to a worker
+that is still alive, not a dead end."*
 
 ## Gotchas while filming
 
@@ -103,7 +117,9 @@ Land on the two escalated rows — https://github.com/ehersch/superset/issues/13
 - The i18n work is 20 locales × ~60 strings of judgement about which
   translation to keep; six sessions ran in parallel and finished in the time one
   engineer fixes one locale.
-- Two issues came back unfixed *with reasons* rather than with a plausible diff.
+- Two issues came back unfixed *with reasons* rather than with a plausible diff
+  — and one of them shipped as soon as a human answered the question, inside
+  the same session.
 
 The system works because the agent is addressable: it has an id, a state, an
 inbox and a reporting schema — so CI failures and review comments go back to the
