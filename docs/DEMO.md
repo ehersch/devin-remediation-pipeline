@@ -24,8 +24,8 @@ pull requests, and a dashboard that answers "is this working?" in one glance.
 | Full narration script | [`demo-script.md`](demo-script.md) |
 | Hands-on runbook | [`WALKTHROUGH.md`](WALKTHROUGH.md) |
 
-Live state at the time of writing: 13 issues dispatched, 11 with a merged-ready
-PR, 2 escalated to a human, ~0.85 autonomous resolution rate, median 10.7
+Live state at the time of writing: 13 issues dispatched, 12 with a merged-ready
+PR, 1 escalated to a human, ~0.92 autonomous resolution rate, median 17.4
 minutes from label to settled.
 
 ## The four labels (the whole state machine)
@@ -78,20 +78,22 @@ in flight / fixed with a PR / escalated / autonomous resolution rate / median
 time to settle / CI retries, a throughput chart, and per issue the session, the
 PR, and the verification transcript it ran.
 
-Land on the escalated rows — https://github.com/ehersch/superset/issues/13
-(could not reproduce) and https://github.com/ehersch/superset/issues/12
-(paramiko: the only unaffected release removes an API `sshtunnel` depends on).
-*"The success rate isn't self-graded: those are the ones it refused to fake."*
+Land on the escalated row — https://github.com/ehersch/superset/issues/13,
+where the session could not reproduce the failing tests on a clean checkout and
+opened nothing. *"The success rate isn't self-graded: that is the one it
+refused to fake."*
 
-**6. Optional, and the best 30 seconds if you have them — answering an
-escalation.** Issue #12 came back with a question rather than a diff: every
-paramiko `<= 4.0.0` is affected, and 5.0.0 removes `DSSKey`, which
-`sshtunnel` calls unconditionally. Shim it, replace sshtunnel, or accept the
-risk? I answered *shim it* in the session — not by re-running anything, just by
-replying to the agent that already had the context — and it came back with
-https://github.com/ehersch/superset/pull/33: the shim, the upgrade, tests on
-both paramiko 3.x and 5.x, and the `UPDATING.md` note for the dropped DSA
-support. The next poll clears `needs-human` and moves the row to fixed.
+**6. The best 30 seconds, if you have them — answering an escalation.**
+Issue https://github.com/ehersch/superset/issues/12 also came back unfixed, but
+with a question rather than a diff: every paramiko `<= 4.0.0` carries the
+advisory, and 5.0.0 removes `DSSKey`, which `sshtunnel` calls unconditionally.
+Shim it, replace sshtunnel, or accept the risk? I answered *shim it* in the
+session — no re-run, no new issue, just a reply to the agent that still held the
+context — and it came back with https://github.com/ehersch/superset/pull/33:
+the shim, the upgrade, tests on both paramiko 3.x and 5.x, and the `UPDATING.md`
+note for dropped DSA support. Superset's own CI is green on it. The next poll
+cleared `needs-human`, labelled the issue `devin-fixed`, and moved the
+dashboard row — nobody touched the pipeline.
 
 *"That is the shape of the whole thing: escalation is a question to a worker
 that is still alive, not a dead end."*
