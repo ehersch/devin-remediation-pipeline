@@ -304,7 +304,9 @@ def render(repo: str, records: list[IssueRecord], stats: dict[str, Any]) -> str:
 <style>{_CSS}</style></head><body><div class="wrap">
 <h1>Devin remediation pipeline</h1>
 <p class="sub"><a href="https://github.com/{escape(repo)}">{escape(repo)}</a>
- · generated {escape(utcnow())}</p>
+ · generated {escape(utcnow())}<br>
+One row per Devin session: the issue it was approved for, what it returned, the
+PR to review, and the verification it ran to prove the fix.</p>
 <div class="cards">{card_html}</div>
 <h2>Throughput — sessions dispatched (blue) vs. settled (green), per hour</h2>
 {_throughput(records)}

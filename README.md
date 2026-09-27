@@ -27,6 +27,9 @@ results are in the fork it operates on, <https://github.com/ehersch/superset>:
 the [issues it filed](https://github.com/ehersch/superset/issues) and the
 [pull requests Devin opened against them](https://github.com/ehersch/superset/pulls).
 
+**New here?** [`docs/DEMO.md`](docs/DEMO.md) is the two-minute version: what the
+system is for, what is live right now, and what to click in what order.
+
 ```
  detectors ──▶ issues (evidence block) ──▶ label `devin-fix` ──▶ Devin session
      ▲                                                               │
