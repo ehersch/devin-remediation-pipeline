@@ -33,7 +33,7 @@ minutes from label to settled.
 | Label | Meaning |
 |---|---|
 | *(none)* | A detector filed it. Nothing has been spent on it. |
-| `devin-fix` | **A human approved it.** This label is the event that starts a session. |
+| `devin-fix` | **Approved.** This label is the event that starts a session — added by a human, or by the nightly policy (up to `AUTO_APPROVE_LIMIT` high-or-worse findings per night, with a comment saying so). |
 | `devin-working` | A session owns it; its URL is commented on the issue. |
 | `devin-fixed` | The session returned a PR and the verification it ran. |
 | `needs-human` | The session could not reproduce it, or refused to ship an unsafe fix. |
@@ -110,7 +110,10 @@ that is still alive, not a dead end."*
   Settings → Pages → `gh-pages` gives you a URL to show instead of a local file.
 - **Unlabelled issues are the point, not a gap.** `#9, #10, #17, #19, #20` sit
   detected and unapproved: a detector can file freely, but nothing spends money
-  until a human labels it.
+  until the issue is labelled — by a human on camera, or by the nightly run,
+  which approves a bounded number itself and comments the decision on the
+  issue. Set the repository variable `AUTO_APPROVE_LIMIT` to `0` if you want
+  them to stay untouched until you film.
 
 ## If someone asks "why Devin and not a script?"
 

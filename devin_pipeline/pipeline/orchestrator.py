@@ -33,29 +33,39 @@ from hashlib import sha256
 from typing import Any
 
 from .config import (
+    Config,
     DISPATCH_LABEL,
     DONE_LABEL,
     ESCALATE_LABEL,
     IN_PROGRESS_LABEL,
     LABELS,
-    Config,
 )
-from .dashboard import render as render_dashboard
-from .dashboard import render_findings
+from .dashboard import render as render_dashboard, render_findings
 from .detectors.base import registry
 from .devin_client import (
-    TERMINAL_STATUSES,
     DevinClient,
     extract_pr_url,
     session_has_result,
     session_is_terminal,
+    TERMINAL_STATUSES,
 )
 from .github_client import GitHubClient
-from .models import Attempt, Evidence, Finding, IssueRecord, Outcome, utcnow
-from .prompts import STRUCTURED_OUTPUT_SCHEMA, build_ci_feedback, build_prompt
+from .models import (
+    Attempt,
+    Evidence,
+    Finding,
+    IssueRecord,
+    Outcome,
+    Severity,
+    utcnow,
+)
+from .prompts import build_ci_feedback, build_prompt, STRUCTURED_OUTPUT_SCHEMA
 from .state import StateStore
 
 logger = logging.getLogger(__name__)
+
+PIPELINE_LABELS = {DISPATCH_LABEL, IN_PROGRESS_LABEL, DONE_LABEL, ESCALATE_LABEL}
+SEVERITY_RANK = {severity.value: rank for rank, severity in enumerate(Severity)}
 
 PR_NUMBER = re.compile(r"/pull/(\d+)")
 
@@ -158,6 +168,49 @@ class Pipeline:
             filed.append(issue)
             logger.info("filed #%s %s", issue.get("number"), finding.title)
         return filed
+
+    # -- approval -------------------------------------------------------
+
+    def auto_approve(self) -> list[int]:
+        """Label unclaimed detector issues `devin-fix` under a standing policy.
+
+        This is the unattended counterpart of a human adding the label: same
+        gate, same audit trail on the issue, but applied on a schedule so the
+        backlog drains overnight. It only ever touches issues that carry an
+        evidence block and no pipeline label at all, so anything a human has
+        claimed, escalated or already approved is left alone, and it never
+        approves more than the configured limit per run.
+        """
+        limit = self.config.auto_approve_limit
+        if limit <= 0:
+            return []
+        threshold = SEVERITY_RANK.get(
+            self.config.auto_approve_min_severity, SEVERITY_RANK[Severity.HIGH.value]
+        )
+        approved: list[int] = []
+        for issue in self.github.iter_issues(state="open"):
+            if len(approved) >= limit:
+                break
+            number = issue["number"]
+            labels = {label["name"] for label in issue.get("labels", [])}
+            if labels & PIPELINE_LABELS or self.state.get(number) is not None:
+                continue
+            evidence = Evidence.parse(issue.get("body") or "")
+            if evidence is None:
+                continue
+            if SEVERITY_RANK.get(evidence.severity, len(SEVERITY_RANK)) > threshold:
+                continue
+            self.github.add_labels(number, [DISPATCH_LABEL])
+            self.github.comment(
+                number,
+                f"Approved for remediation by the scheduled policy "
+                f"(severity `{evidence.severity}` \u2265 "
+                f"`{self.config.auto_approve_min_severity}`). A session is "
+                f"dispatched next; remove `{DISPATCH_LABEL}` first to veto.",
+            )
+            approved.append(number)
+            logger.info("auto-approved #%s (%s)", number, evidence.severity)
+        return approved
 
     # -- dispatch -------------------------------------------------------
 
