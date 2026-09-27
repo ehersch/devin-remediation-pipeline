@@ -33,7 +33,7 @@ minutes from label to settled.
 | Label | Meaning |
 |---|---|
 | *(none)* | A detector filed it. Nothing has been spent on it. |
-| `devin-fix` | **Approved.** This label is the event that starts a session — added by a human, or by the nightly policy (up to `AUTO_APPROVE_LIMIT` high-or-worse findings per night, with a comment saying so). |
+| `devin-fix` | **Approved.** This label is the event that starts a session — added by a human, or by the standing policy when an evidence-backed issue is opened or in the nightly run (high-or-worse findings, at most `AUTO_APPROVE_LIMIT` per run and `MAX_IN_FLIGHT` live sessions, with a comment saying so). |
 | `devin-working` | A session owns it; its URL is commented on the issue. |
 | `devin-fixed` | The session returned a PR and the verification it ran. |
 | `needs-human` | The session could not reproduce it, or refused to ship an unsafe fix. |
@@ -100,20 +100,22 @@ that is still alive, not a dead end."*
 
 ## Gotchas while filming
 
-- **Scheduled workflows are disabled on forks.** The 15-minute poll that settles
-  sessions will not fire by itself. After labelling, settle it by hand:
-  Actions → *devin-pipeline / dispatch* → **Run workflow**. That same run also
-  republishes the dashboard.
+- **Don't wait on the schedule.** The 15-minute poll settles sessions, but on
+  camera settle it by hand: Actions → *devin-pipeline / dispatch* →
+  **Run workflow**. That same run also republishes the dashboard.
 - **A session takes ~10 minutes to settle.** Label on camera, then cut to an
   already-settled PR; come back at the end if you want to show it landed.
 - **The dashboard is a static file** on the `gh-pages` branch. Enabling
   Settings → Pages → `gh-pages` gives you a URL to show instead of a local file.
 - **Unlabelled issues are the point, not a gap.** `#9, #10, #17, #19, #20` sit
   detected and unapproved: a detector can file freely, but nothing spends money
-  until the issue is labelled — by a human on camera, or by the nightly run,
-  which approves a bounded number itself and comments the decision on the
-  issue. Set the repository variable `AUTO_APPROVE_LIMIT` to `0` if you want
-  them to stay untouched until you film.
+  until the issue is labelled — by a human on camera, or by the standing
+  policy (on `issues.opened` and in the nightly run), which approves a bounded
+  number itself and comments the decision on the issue. Those five predate the
+  policy, so they stay put until the nightly run picks them up; set the
+  repository variable `AUTO_APPROVE_LIMIT` to `0` if you want them untouched
+  until you film. A fresh issue with a valid evidence block, on the other hand,
+  gets a session within a minute of being opened.
 
 ## If someone asks "why Devin and not a script?"
 

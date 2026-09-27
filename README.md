@@ -57,13 +57,16 @@ explanation rather than turned into a vague prompt.
 ACU until an issue carries `devin-fix`. That keeps a noisy scan from becoming a
 spend incident and gives a human a natural place to intervene.
 
-**Unattended approval is a policy, not a bypass.** The nightly run may add
-`devin-fix` itself to a bounded number of unclaimed findings (`AUTO_APPROVE_LIMIT`,
-default 3 in the workflow, 0 in the CLI) at or above a severity floor
-(`AUTO_APPROVE_MIN_SEVERITY`, default `high`). It goes through the same label,
-comments the decision on the issue, and never touches anything a human has
-claimed, escalated or already approved — so the backlog drains overnight while
-the label stays the single place to veto or fast-track.
+**Unattended approval is a policy, not a bypass.** A standing policy may add
+`devin-fix` itself — when an issue is opened, and in the nightly run for any
+backlog — to unclaimed findings at or above a severity floor
+(`AUTO_APPROVE_MIN_SEVERITY`, default `high`), at most `AUTO_APPROVE_LIMIT` per
+run (default 3 in the workflows, 0 in the CLI) and never while `MAX_IN_FLIGHT`
+sessions (default 5) are already live. It goes through the same label, comments
+the decision on the issue, and never touches anything a human has claimed,
+escalated or already approved — so an evidence-backed issue becomes a session
+within a minute of being filed, while the label stays the single place to veto
+(`AUTO_APPROVE_LIMIT=0` makes it the only gate again) or fast-track.
 
 **Budgets are configuration, not comments.** Sessions carry `max_acu_limit`,
 dispatch is capped per run, and CI feedback is capped per PR. When a budget is
@@ -100,6 +103,7 @@ reviewable PRs beat twenty.
 | Event | Workflow | Action |
 | --- | --- | --- |
 | Nightly schedule / manual | `devin-pipeline-scan.yml` | run detectors, file or refresh issues, auto-approve up to `AUTO_APPROVE_LIMIT` findings, dispatch, settle, publish |
+| `issues.opened` | `devin-pipeline-dispatch.yml` | if the issue carries an evidence block that meets the policy and budgets allow, label it `devin-fix` and create a Devin session |
 | `issues.labeled` with `devin-fix` | `devin-pipeline-dispatch.yml` | create a Devin session for that issue |
 | Every 15 min | `devin-pipeline-dispatch.yml` | poll live sessions, settle them, publish the run report |
 | `check_suite.completed` = failure | `devin-pipeline-ci-feedback.yml` | send the failing checks back into the owning session |
