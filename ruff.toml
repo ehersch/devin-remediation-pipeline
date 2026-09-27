@@ -1,0 +1,6 @@
+# Keeps this package lint-clean under the naming rules Superset's pre-commit
+# enforces, so the copy vendored into the fork needs no divergent edits.
+line-length = 88
+
+[lint]
+select = ["E", "F", "N"]
