@@ -27,31 +27,32 @@ from __future__ import annotations
 import json
 import logging
 import re
+from collections.abc import Iterable
 from datetime import datetime
 from hashlib import sha256
-from typing import Any, Iterable
+from typing import Any
 
 from .config import (
-    Config,
     DISPATCH_LABEL,
     DONE_LABEL,
     ESCALATE_LABEL,
     IN_PROGRESS_LABEL,
     LABELS,
+    Config,
 )
 from .dashboard import render as render_dashboard
 from .dashboard import render_findings
 from .detectors.base import registry
 from .devin_client import (
+    TERMINAL_STATUSES,
     DevinClient,
     extract_pr_url,
     session_has_result,
     session_is_terminal,
-    TERMINAL_STATUSES,
 )
 from .github_client import GitHubClient
 from .models import Attempt, Evidence, Finding, IssueRecord, Outcome, utcnow
-from .prompts import build_ci_feedback, build_prompt, STRUCTURED_OUTPUT_SCHEMA
+from .prompts import STRUCTURED_OUTPUT_SCHEMA, build_ci_feedback, build_prompt
 from .state import StateStore
 
 logger = logging.getLogger(__name__)
@@ -103,8 +104,9 @@ class Pipeline:
                 continue
             try:
                 produced = list(detector(self.config.repo_path))
-            except Exception:  # noqa: BLE001 - one broken detector must not
-                # take the run down; the others still have work to file.
+            except Exception:
+                # One broken detector must not take the run down; the others
+                # still have work to file.
                 logger.exception("detector %s failed", name)
                 continue
             limit = self.config.max_issues_per_detector

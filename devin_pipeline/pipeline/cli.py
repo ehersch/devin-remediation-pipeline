@@ -102,7 +102,7 @@ def _serve(html: str, port: int) -> int:
     payload = html.encode()
 
     class Handler(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:  # http.server's interface, not our naming
+        def do_GET(self) -> None:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))
@@ -113,6 +113,7 @@ def _serve(html: str, port: int) -> int:
             return
 
     print(f"serving findings on http://localhost:{port} (ctrl-c to stop)")
+    # Binds all interfaces so `docker run -p` reaches it from the host.
     with ThreadingHTTPServer(("0.0.0.0", port), Handler) as httpd:
         try:
             httpd.serve_forever()
