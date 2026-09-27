@@ -113,8 +113,9 @@ def _serve(html: str, port: int) -> int:
             return
 
     print(f"serving findings on http://localhost:{port} (ctrl-c to stop)")
-    # Binds all interfaces so `docker run -p` reaches it from the host.
-    with ThreadingHTTPServer(("0.0.0.0", port), Handler) as httpd:
+    # An empty host binds every interface, which is what `docker run -p` needs
+    # to reach the server from the host.
+    with ThreadingHTTPServer(("", port), Handler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
